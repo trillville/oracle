@@ -82,17 +82,17 @@ class RedditUpdater:
             cursor.execute(
                 f"""
             WITH comment_data AS (
-              SELECT date, ticker, AVG(sentiment) as comment_sentiment, SUM(upvotes) AS comment_upvotes, SUM(comments) AS comment_replies
+              SELECT date, ticker, AVG(sentiment) as comment_sentiment, SUM(upvotes) AS comment_upvotes, SUM(comments) AS comment_replies, COUNT(DISTINCT id) as comment_mentions
               FROM (SELECT date_trunc('hour', posted) as date, UNNEST(text_mentions) as ticker, sentiment, upvotes, comments from comments WHERE posted > %(min_datetime)s) a
               GROUP BY date, ticker
             ),
             post_title_data AS (
-              SELECT date, ticker, AVG(sentiment) as post_title_sentiment, SUM(upvotes) AS post_title_upvotes, SUM(comments) AS post_title_replies
+              SELECT date, ticker, AVG(sentiment) as post_title_sentiment, SUM(upvotes) AS post_title_upvotes, SUM(comments) AS post_title_replies, COUNT(DISTINCT id) as post_title_mentions
               FROM (SELECT date_trunc('hour', posted) as date, UNNEST(title_mentions) as ticker, sentiment, upvotes, comments from posts WHERE posted > %(min_datetime)s) a
               GROUP BY date, ticker
             ),
             post_text_data AS (
-              SELECT date, ticker, AVG(sentiment) as post_text_sentiment, SUM(upvotes) AS post_text_upvotes, SUM(comments) AS post_text_replies
+              SELECT date, ticker, AVG(sentiment) as post_text_sentiment, SUM(upvotes) AS post_text_upvotes, SUM(comments) AS post_text_replies, COUNT(DISTINCT id) as post_text_mentions
               FROM (SELECT date_trunc('hour', posted) as date, UNNEST(text_mentions) as ticker, sentiment, upvotes, comments from posts WHERE posted > %(min_datetime)s) a
               GROUP BY date, ticker
             ),
@@ -106,6 +106,8 @@ class RedditUpdater:
               COALESCE(post_text_upvotes, 0) AS post_text_upvotes,
               COALESCE(post_title_replies, 0) AS post_title_replies,
               COALESCE(post_text_replies, 0) AS post_text_replies
+              COALESCE(post_title_mentions, 0) AS post_title_mentions,
+              COALESCE(post_text_mentions, 0) AS post_text_mentions
             FROM post_title_data a
             FULL OUTER JOIN post_text_data b
               ON a.date = b.date AND a.ticker = b.ticker
@@ -123,13 +125,17 @@ class RedditUpdater:
               COALESCE(comment_replies, 0) AS comment_replies,
               COALESCE(post_title_replies, 0) AS post_title_replies,
               COALESCE(post_text_replies, 0) AS post_text_replies
+              COALESCE(comment_mentions, 0) AS comment_mentions,
+              COALESCE(post_title_mentions, 0) AS post_title_mentions,
+              COALESCE(post_text_mentions, 0) AS post_text_mentions
             FROM comment_data a
             FULL OUTER JOIN post_data_combined b
               ON a.date = b.date AND a.ticker = b.ticker
             )
             INSERT INTO tickers (date, ticker, comment_sentiment, post_title_sentiment, post_text_sentiment,
                                  comment_upvotes, post_title_upvotes, post_text_upvotes, comment_replies,
-                                 post_title_replies, post_text_replies)
+                                 post_title_replies, post_text_replies, comment_mentions,
+                                 post_title_mentions, post_text_mentions)
             SELECT * FROM ticker_data
             ON CONFLICT (date, ticker)
             DO UPDATE SET
@@ -141,7 +147,10 @@ class RedditUpdater:
               post_text_upvotes = EXCLUDED.post_text_upvotes,
               comment_replies = EXCLUDED.comment_replies,
               post_title_replies = EXCLUDED.post_title_replies,
-              post_text_replies = EXCLUDED.post_text_replies;
+              post_text_replies = EXCLUDED.post_text_replies,
+              comment_mentions = EXCLUDED.comment_mentions,
+              post_title_mentions = EXCLUDED.post_title_mentions,
+              post_text_mentions = EXCLUDED.post_text_mentions;
             """,
                 {**dt},
             )
