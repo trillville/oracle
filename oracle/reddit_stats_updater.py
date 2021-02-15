@@ -124,7 +124,7 @@ class RedditUpdater:
               COALESCE(post_text_upvotes, 0) AS post_text_upvotes,
               COALESCE(comment_replies, 0) AS comment_replies,
               COALESCE(post_title_replies, 0) AS post_title_replies,
-              COALESCE(post_text_replies, 0) AS post_text_replies
+              COALESCE(post_text_replies, 0) AS post_text_replies,
               COALESCE(comment_mentions, 0) AS comment_mentions,
               COALESCE(post_title_mentions, 0) AS post_title_mentions,
               COALESCE(post_text_mentions, 0) AS post_text_mentions
