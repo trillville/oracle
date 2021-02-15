@@ -93,23 +93,31 @@ connection.autocommit = True
 #         );
 #     """)
 
+# def create_staging_table3(cursor) -> None:
+#     cursor.execute("""
+#         DROP TABLE IF EXISTS tickers;
+#         CREATE TABLE tickers (
+#             date                    TIMESTAMP WITH TIME ZONE,
+#             ticker                  TEXT,
+#             comment_sentiment       DECIMAL,
+#             post_title_sentiment    DECIMAL,
+#             post_text_sentiment     DECIMAL,
+#             comment_upvotes         INTEGER,
+#             post_title_upvotes      INTEGER,
+#             post_text_upvotes       INTEGER,
+#             comment_replies         INTEGER,
+#             post_title_replies      INTEGER,
+#             post_text_replies       INTEGER
+#         );
+#         CREATE UNIQUE INDEX CONCURRENTLY ticker_date_index ON tickers (date, ticker);
+#     """)
+
 def create_staging_table3(cursor) -> None:
     cursor.execute("""
-        DROP TABLE IF EXISTS tickers;
-        CREATE TABLE tickers (
-            date                    TIMESTAMP WITH TIME ZONE,
-            ticker                  TEXT,
-            comment_sentiment       DECIMAL,
-            post_title_sentiment    DECIMAL,
-            post_text_sentiment     DECIMAL,
-            comment_upvotes         INTEGER,
-            post_title_upvotes      INTEGER,
-            post_text_upvotes       INTEGER,
-            comment_replies         INTEGER,
-            post_title_replies      INTEGER,
-            post_text_replies       INTEGER
-        );
-        CREATE UNIQUE INDEX CONCURRENTLY ticker_date_index ON tickers (date, ticker);
+        ALTER TABLE tickers
+        ADD COLUMN comment_mentions INTEGER,
+        ADD COLUMN post_title_mentions INTEGER,
+        ADD COLUMN post_text_mentions INTEGER;
     """)
 
 with connection.cursor() as cursor:
