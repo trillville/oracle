@@ -83,17 +83,17 @@ class RedditUpdater:
                 f"""
             WITH comment_data AS (
               SELECT date, ticker, AVG(sentiment) as comment_sentiment, SUM(upvotes) AS comment_upvotes, SUM(comments) AS comment_replies, COUNT(DISTINCT id) as comment_mentions
-              FROM (SELECT date_trunc('hour', posted) as date, UNNEST(text_mentions) as ticker, sentiment, upvotes, comments from comments WHERE posted > %(min_datetime)s) a
+              FROM (SELECT id, date_trunc('hour', posted) as date, UNNEST(text_mentions) as ticker, sentiment, upvotes, comments from comments WHERE posted > %(min_datetime)s) a
               GROUP BY date, ticker
             ),
             post_title_data AS (
               SELECT date, ticker, AVG(sentiment) as post_title_sentiment, SUM(upvotes) AS post_title_upvotes, SUM(comments) AS post_title_replies, COUNT(DISTINCT id) as post_title_mentions
-              FROM (SELECT date_trunc('hour', posted) as date, UNNEST(title_mentions) as ticker, sentiment, upvotes, comments from posts WHERE posted > %(min_datetime)s) a
+              FROM (SELECT id, date_trunc('hour', posted) as date, UNNEST(title_mentions) as ticker, sentiment, upvotes, comments from posts WHERE posted > %(min_datetime)s) a
               GROUP BY date, ticker
             ),
             post_text_data AS (
               SELECT date, ticker, AVG(sentiment) as post_text_sentiment, SUM(upvotes) AS post_text_upvotes, SUM(comments) AS post_text_replies, COUNT(DISTINCT id) as post_text_mentions
-              FROM (SELECT date_trunc('hour', posted) as date, UNNEST(text_mentions) as ticker, sentiment, upvotes, comments from posts WHERE posted > %(min_datetime)s) a
+              FROM (SELECT id, date_trunc('hour', posted) as date, UNNEST(text_mentions) as ticker, sentiment, upvotes, comments from posts WHERE posted > %(min_datetime)s) a
               GROUP BY date, ticker
             ),
             post_data_combined AS (
