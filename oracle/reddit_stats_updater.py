@@ -27,7 +27,7 @@ class RedditUpdater:
             where_clause = "WHERE cardinality(text_mentions) > 0 OR cardinality(title_mentions) > 0"
             records = 100
         with self.connection.cursor() as cursor:
-            cursor.execute(f"SELECT id from {table_name} {where_clause} ORDER BY last_updated ASC LIMIT 1000")
+            cursor.execute(f"SELECT id from {table_name} {where_clause} ORDER BY last_updated ASC LIMIT {records}")
             ids = [x[0] for x in cursor.fetchall()]
             update_dict = {id: {"upvotes": 0, "comments": 0} for id in ids}
             return ids, update_dict
