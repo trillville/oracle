@@ -22,8 +22,10 @@ class RedditUpdater:
         where_clause = ""
         if table_name == "comments":
             where_clause = "WHERE cardinality(text_mentions) > 0"
+            records = 1000
         elif table_name == "posts":
             where_clause = "WHERE cardinality(text_mentions) > 0 OR cardinality(title_mentions) > 0"
+            records = 100
         with self.connection.cursor() as cursor:
             cursor.execute(f"SELECT id from {table_name} {where_clause} ORDER BY last_updated ASC LIMIT 1000")
             ids = [x[0] for x in cursor.fetchall()]
@@ -39,7 +41,7 @@ class RedditUpdater:
                 DELETE FROM comments
                 WHERE posted < %s;
                 """,
-                [datetime.now() - timedelta(hours=72), datetime.now() - timedelta(hours=48)],
+                [datetime.now() - timedelta(hours=48), datetime.now() - timedelta(hours=48)],
             )
 
     def update_posts(self, update_dict):
