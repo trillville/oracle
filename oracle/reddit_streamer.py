@@ -28,15 +28,15 @@ class RedditStreamer:
         self.comments = []
 
     def insert_post(self, submission):
+        title_keywords = [x.replace("$", "") for x in self.keyword_processor.extract_keywords(submission.title)]
+        text_keywords = [x.replace("$", "") for x in self.keyword_processor.extract_keywords(submission.selftext)]
         sub = {
             "posted": datetime.utcfromtimestamp(submission.created_utc),
             "last_updated": datetime.utcfromtimestamp(submission.created_utc),
             "id": submission.id,
             "title": submission.title,
-            "title_mentions": list(set(self.keyword_processor.extract_keywords(submission.title))),
-            "text_mentions": list(
-                set(self.keyword_processor.extract_keywords(submission.selftext))
-            ),
+            "title_mentions": list(set(title_keywords)),
+            "text_mentions": list(set(text_keywords)),
             "sentiment": TextBlob(submission.title).sentiment.polarity,
             "upvotes": submission.ups,
             "comments": submission.num_comments,
@@ -60,13 +60,14 @@ class RedditStreamer:
             )
 
     def insert_comment(self, comment):
+        keywords = [x.replace("$", "") for x in self.keyword_processor.extract_keywords(comment.body)]
         self.comments.append(
             {
                 "posted": datetime.utcfromtimestamp(comment.created_utc),
                 "last_updated": datetime.utcfromtimestamp(comment.created_utc),
                 "id": comment.id,
                 "text": comment.body[:50],
-                "text_mentions": list(set(self.keyword_processor.extract_keywords(comment.body))),
+                "text_mentions": list(set(keywords)),
                 "sentiment": TextBlob(comment.body).sentiment.polarity,
                 "upvotes": comment.ups,
                 "comments": 0,
