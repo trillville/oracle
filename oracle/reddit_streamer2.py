@@ -114,13 +114,11 @@ class RedditStreamer:
             print("comments added")
 
     def update_comment(self):
-        print(len(self.comments_to_update), len(self.comments_jobs), len(self.active_comments))
         comment_id = self.comments_jobs.pop()
         try:
-            self.comments_to_update.append({comment_id: self.reddit.comment(id=comment_id).ups})
+            self.comments_to_update.append({"id": comment_id, "ups": self.reddit.comment(id=comment_id).ups, "time": datetime.now()})
             if comment_id in self.active_comments:
                 self.comments_jobs.appendleft(comment_id)
-            print(len(self.comments_to_update))
         except:
             pass
 
@@ -131,13 +129,14 @@ class RedditStreamer:
                     f"""
                     UPDATE comments
                     SET
-                        upvotes = %s,
-                        last_updated = %s
+                        upvotes = %(ups)s,
+                        last_updated = %(time)s
                     WHERE
-                        id = %s;
+                        id = %(id)s;
                 """,
                     ({**update_key} for update_key in self.comments_to_update),
                 )
+            self.comments_to_update
             print("comments updated")
 
 
