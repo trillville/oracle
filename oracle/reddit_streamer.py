@@ -107,10 +107,11 @@ class RedditStreamer:
 
 
     def update_comment(self):
-        try:
-            self.comment_update_batch.append("t1_" + self.comments_jobs.pop())
-        except:
-            pass
+        for i in range(10):
+            try:
+                self.comment_update_batch.append("t1_" + self.comments_jobs.pop())
+            except:
+                pass
         if len(self.comment_update_batch) >= 100:
             s = time.time()
             for comment in self.r.info(fullname=self.comment_update_batch):
@@ -157,7 +158,7 @@ def main():
             streamer.insert_comment(comment)
             s = time.time()
 
-        u += 1
+        u += 10
         streamer.update_comment()
 
         if len(streamer.comments) >= 100:
