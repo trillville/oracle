@@ -85,7 +85,7 @@ class RedditStreamer:
             }
         )
         if len(keywords) > 0:
-            self.r.set(name=comment.id, value="", ex=2*24*60*60)
+            self.r.set(name=comment.id, value="", ex=2 * 24 * 60 * 60)
             self.comments_jobs.appendleft(comment.id)
         with self.connection.cursor() as cursor:
             cursor.execute(
@@ -141,25 +141,32 @@ class RedditStreamer:
                 """,
                     ({**update_key} for update_key in self.comments_to_update),
                 )
-            self.comments_to_update
+            self.comments_to_update = []
 
 
 def main():
     streamer = RedditStreamer()
+    c, p, u = 0, 0, 0
 
     while True:
         for post in streamer.posts_stream:
             if post is None:
                 break
+            p += 1
             streamer.insert_post(post)
 
         for comment in streamer.comments_stream:
             if comment is None:
                 break
+            p += 1
             streamer.insert_comment(comment)
 
         if len(streamer.comments_jobs) > 0:
+            u += 1
             streamer.update_comment()
+        total = c + p + u
+        if total % 100 == 0:
+            print(f"comments added: {c}, posts added: {p}, comments updated: {u}")
 
 
 if __name__ == "__main__":
