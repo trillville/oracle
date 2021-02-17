@@ -156,9 +156,9 @@ def main():
         u += 1
         streamer.update_comment()
 
-        if len(self.comments) >= 50:
+        if len(streamer.comments) >= 50:
             s = time.time()
-            with self.connection.cursor() as cursor:
+            with streamer.connection.cursor() as cursor:
                 psycopg2.extras.execute_batch(
                     cursor,
                     """
@@ -173,10 +173,10 @@ def main():
                     %(comments)s
                     );
                 """,
-                    ({**tmp_comment} for tmp_comment in self.comments),
+                    ({**tmp_comment} for tmp_comment in streamer.comments),
                 )
-            self.comments = []
-            self.timers["insert_pg"] += time.time() - s
+            streamer.comments = []
+            streamer.timers["insert_pg"] += time.time() - s
 
         total = c + p + u
         if total % 100 == 0:
