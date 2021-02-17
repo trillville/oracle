@@ -157,7 +157,7 @@ def main():
                 break
             streamer.insert_comment(comment)
 
-        if len(self.comments_jobs) > 0:
+        if len(streamer.comments_jobs) > 0:
             streamer.update_comment()
 
 
