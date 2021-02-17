@@ -125,8 +125,8 @@ class RedditStreamer:
             self.timers["pull_comments"] += time.time() - s
             s = time.time()
             if self.r.exists(comment_id):
-                self.timers["check_exists"] += time.time() - s
                 self.comments_jobs.appendleft(comment_id)
+            self.timers["check_exists"] += time.time() - s
         except:
             pass
 
