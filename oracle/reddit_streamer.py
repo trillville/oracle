@@ -30,7 +30,7 @@ class RedditStreamer:
         self.keyword_processor.add_keywords_from_list(NYSE + NASDAQ + AMEX)
         self.comments = []
         self.comments_to_update = []
-        self.comments_jobs = deque(self.r.keys().reverse())
+        self.comments_jobs = deque(self.r.keys().reverse() or [])
 
     def insert_post(self, submission):
         title_keywords = [
