@@ -88,7 +88,7 @@ class RedditStreamer:
         if len(keywords) > 0:
             self.r.set(name=comment.id, value="", ex=2 * 24 * 60 * 60)
             self.comments_jobs.appendleft(comment.id)
-        if len(self.comments) >= 10:
+        if len(self.comments) >= 50:
             with self.connection.cursor() as cursor:
                 psycopg2.extras.execute_batch(
                     cursor,
@@ -124,7 +124,7 @@ class RedditStreamer:
         except:
             pass
 
-        if len(self.comments_to_update) >= 10:
+        if len(self.comments_to_update) >= 50:
             with self.connection.cursor() as cursor:
                 psycopg2.extras.execute_batch(
                     cursor,
@@ -158,7 +158,8 @@ def main():
             c += 1
             streamer.insert_comment(comment)
 
-        u += 1
+        u += 2
+        streamer.update_comment()
         streamer.update_comment()
 
         total = c + p + u
