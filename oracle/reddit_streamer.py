@@ -137,21 +137,23 @@ def main():
     overall_start = time.time()
 
     while True:
+        s = time.time()
         for post in streamer.posts_stream:
-            s = time.time()
             if post is None:
                 break
             p += 1
             streamer.timers["pull_posts"] += time.time() - s
             streamer.insert_post(post)
-
-        for comment in streamer.comments_stream:
             s = time.time()
+
+        s = time.time()
+        for comment in streamer.comments_stream:
             if comment is None:
                 break
             c += 1
             streamer.timers["pull_comments"] += time.time() - s
             streamer.insert_comment(comment)
+            s = time.time()
 
         u += 1
         streamer.update_comment()
@@ -182,7 +184,7 @@ def main():
         if total % 100 == 0:
             print(f"comments added: {c}, posts added: {p}, comments updated: {u}")
             print(streamer.timers)
-            print(f"APM: {total / (time.time() - overall_start)}")
+            print(f"APS: {total / (time.time() - overall_start)}")
 
 
 if __name__ == "__main__":
