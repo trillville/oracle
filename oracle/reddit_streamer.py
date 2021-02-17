@@ -110,8 +110,8 @@ class RedditStreamer:
             self.comments = []
 
     def update_comment(self):
-        comment_id = self.comments_jobs.pop()
         try:
+            comment_id = self.comments_jobs.pop()
             self.comments_to_update.append(
                 {
                     "id": comment_id,
@@ -155,12 +155,12 @@ def main():
         for comment in streamer.comments_stream:
             if comment is None:
                 break
-            p += 1
+            c += 1
             streamer.insert_comment(comment)
 
-        if len(streamer.comments_jobs) > 0:
-            u += 1
-            streamer.update_comment()
+        u += 1
+        streamer.update_comment()
+
         total = c + p + u
         if total % 100 == 0:
             print(f"comments added: {c}, posts added: {p}, comments updated: {u}")
