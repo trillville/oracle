@@ -3,13 +3,16 @@ import praw
 from flashtext import KeywordProcessor
 from textblob import TextBlob
 from tickers import NYSE, NASDAQ, AMEX
+from collections import deque
 import psycopg2
 import psycopg2.extras
 from datetime import datetime
+import redis
 
 
 class RedditStreamer:
     def __init__(self):
+        self.r = redis.StrictRedis.from_url(os.environ.get("REDIS_URL"))
         self.connection = psycopg2.connect(os.environ["DATABASE_URL"], sslmode="require")
         self.connection.autocommit = True
         self.reddit = praw.Reddit(
@@ -26,10 +29,16 @@ class RedditStreamer:
         self.keyword_processor = KeywordProcessor()
         self.keyword_processor.add_keywords_from_list(NYSE + NASDAQ + AMEX)
         self.comments = []
+        self.comments_to_update = []
+        self.comments_jobs = deque(self.r.keys().reverse())
 
     def insert_post(self, submission):
-        title_keywords = [x.replace("$", "") for x in self.keyword_processor.extract_keywords(submission.title)]
-        text_keywords = [x.replace("$", "") for x in self.keyword_processor.extract_keywords(submission.selftext)]
+        title_keywords = [
+            x.replace("$", "") for x in self.keyword_processor.extract_keywords(submission.title)
+        ]
+        text_keywords = [
+            x.replace("$", "") for x in self.keyword_processor.extract_keywords(submission.selftext)
+        ]
         sub = {
             "posted": datetime.utcfromtimestamp(submission.created_utc),
             "last_updated": datetime.utcfromtimestamp(submission.created_utc),
@@ -60,7 +69,9 @@ class RedditStreamer:
             )
 
     def insert_comment(self, comment):
-        keywords = [x.replace("$", "") for x in self.keyword_processor.extract_keywords(comment.body)]
+        keywords = [
+            x.replace("$", "") for x in self.keyword_processor.extract_keywords(comment.body)
+        ]
         self.comments.append(
             {
                 "posted": datetime.utcfromtimestamp(comment.created_utc),
@@ -73,6 +84,9 @@ class RedditStreamer:
                 "comments": 0,
             }
         )
+        if len(keywords) > 0:
+            self.r.set(comment.id, expire=2*24*60*60)
+            self.comments_jobs.appendleft(comment.id)
         with self.connection.cursor() as cursor:
             cursor.execute(
                 "UPDATE comments SET comments = comments + 1 where id = %s;",
@@ -97,6 +111,39 @@ class RedditStreamer:
                     ({**tmp_comment} for tmp_comment in self.comments),
                 )
             self.comments = []
+            print("comments added")
+
+    def update_comment(self):
+        comment_id = self.comments_jobs.pop()
+        try:
+            self.comments_to_update.append(
+                {
+                    "id": comment_id,
+                    "ups": self.reddit.comment(id=comment_id).ups,
+                    "time": datetime.now(),
+                }
+            )
+            if self.r.exists(comment_id):
+                self.comments_jobs.appendleft(comment_id)
+        except:
+            pass
+
+        if len(self.comments_to_update) >= 10:
+            with self.connection.cursor() as cursor:
+                psycopg2.extras.execute_batch(
+                    cursor,
+                    f"""
+                    UPDATE comments
+                    SET
+                        upvotes = %(ups)s,
+                        last_updated = %(time)s
+                    WHERE
+                        id = %(id)s;
+                """,
+                    ({**update_key} for update_key in self.comments_to_update),
+                )
+            self.comments_to_update
+            print("comments updated")
 
 
 def main():
@@ -106,12 +153,16 @@ def main():
         for post in streamer.posts_stream:
             if post is None:
                 break
+            print("post updated")
             streamer.insert_post(post)
 
         for comment in streamer.comments_stream:
             if comment is None:
                 break
             streamer.insert_comment(comment)
+
+        if len(streamer.comments_jobs) > 0:
+            streamer.update_comment()
 
 
 if __name__ == "__main__":
