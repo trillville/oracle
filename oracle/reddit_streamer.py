@@ -127,7 +127,7 @@ class RedditStreamer:
                         "text_mentions": list(set(keywords)),
                         "sentiment": TextBlob(comment.body).sentiment.polarity,
                         "upvotes": comment.ups,
-                        "comments": self.r.get(comment_id) or 0
+                        "comments": self.r.get(comment.id) or 0
                     }
                 )
                 s = time.time()
