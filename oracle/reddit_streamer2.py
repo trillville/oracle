@@ -117,7 +117,7 @@ class RedditStreamer:
         print(len(self.comments_to_update), len(self.comments_jobs), len(self.active_comments))
         comment_id = self.comments_jobs.pop()
         try:
-            self.comments_to_update[id] = self.reddit.comment(id=comment_id).ups
+            self.comments_to_update.append({comment_id: self.reddit.comment(id=comment_id).ups})
             if comment_id in self.active_comments:
                 self.comments_jobs.appendleft(comment_id)
             print(len(self.comments_to_update))
