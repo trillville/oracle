@@ -114,7 +114,7 @@ class RedditStreamer:
                 pass
         if len(self.comment_update_batch) >= 100:
             s = time.time()
-            for comment in self.r.info(fullnames=self.comment_update_batch):
+            for comment in self.reddit.info(fullnames=self.comment_update_batch):
                 self.comments.append(
                     {
                         "posted": datetime.utcfromtimestamp(comment.created_utc),
