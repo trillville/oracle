@@ -39,6 +39,7 @@ class RedditStreamer:
             "pull_posts": 0.0,
             "pull_comments": 0.0,
         }
+        self.comment_update_batch = []
 
     def insert_post(self, submission):
         title_keywords = [
@@ -107,29 +108,30 @@ class RedditStreamer:
 
     def update_comment(self):
         try:
-            comment_id = self.comments_jobs.pop()
-            s = time.time()
-            comment = self.reddit.comment(id=comment_id)
-            self.comments.append(
-                {
-                    "posted": datetime.utcfromtimestamp(comment.created_utc),
-                    "last_updated": datetime.now(),
-                    "id": comment.id,
-                    "text": comment.body[:50],
-                    "text_mentions": list(set(keywords)),
-                    "sentiment": TextBlob(comment.body).sentiment.polarity,
-                    "upvotes": comment.ups,
-                    "comments": self.r.get(comment_id) or 0
-                }
-            )
-            self.timers["pull_comments"] += time.time() - s
-            s = time.time()
-            if self.r.exists(comment_id):
-                self.comments_jobs.appendleft(comment_id)
-            self.timers["check_exists"] += time.time() - s
+            self.comment_update_batch.append("t1_" + self.comments_jobs.pop())
         except:
             pass
-
+        if len(self.comment_update_batch) >= 100:
+            s = time.time()
+            for comment in self.r.info(fullname=self.comment_update_batch):
+                self.comments.append(
+                    {
+                        "posted": datetime.utcfromtimestamp(comment.created_utc),
+                        "last_updated": datetime.now(),
+                        "id": comment.id,
+                        "text": comment.body[:50],
+                        "text_mentions": list(set(keywords)),
+                        "sentiment": TextBlob(comment.body).sentiment.polarity,
+                        "upvotes": comment.ups,
+                        "comments": self.r.get(comment_id) or 0
+                    }
+                )
+                s = time.time()
+                if self.r.exists(comment_id):
+                    self.comments_jobs.appendleft(comment_id)
+                self.timers["check_exists"] += time.time() - s
+            self.timers["pull_comments"] += time.time() - s
+            self.comment_update_batch = []
 
 def main():
     streamer = RedditStreamer()
@@ -158,7 +160,7 @@ def main():
         u += 1
         streamer.update_comment()
 
-        if len(streamer.comments) >= 50:
+        if len(streamer.comments) >= 100:
             s = time.time()
             with streamer.connection.cursor() as cursor:
                 psycopg2.extras.execute_batch(
