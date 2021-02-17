@@ -120,7 +120,7 @@ class RedditStreamer:
             if comment_id in self.active_comments:
                 self.comments_jobs.appendleft(comment_id)
         except:
-            continue
+            pass
 
         if len(self.comments_to_update) >= 10:
             with self.connection.cursor() as cursor:
