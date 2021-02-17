@@ -82,16 +82,12 @@ class RedditStreamer:
                 "sentiment": TextBlob(comment.body).sentiment.polarity,
                 "upvotes": comment.ups,
                 "comments": 0,
+                "parent_id": comment.parent_id[3:]
             }
         )
         if len(keywords) > 0:
             self.r.set(name=comment.id, value="", ex=2 * 24 * 60 * 60)
             self.comments_jobs.appendleft(comment.id)
-        with self.connection.cursor() as cursor:
-            cursor.execute(
-                "UPDATE comments SET comments = comments + 1 where id = %s;",
-                [comment.parent_id[3:]],
-            )
         if len(self.comments) >= 10:
             with self.connection.cursor() as cursor:
                 psycopg2.extras.execute_batch(
@@ -107,6 +103,7 @@ class RedditStreamer:
                     %(upvotes)s,
                     %(comments)s
                     );
+                    UPDATE comments SET comments = comments + 1 where id = %(parent_id)s;
                 """,
                     ({**tmp_comment} for tmp_comment in self.comments),
                 )
