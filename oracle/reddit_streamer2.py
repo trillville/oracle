@@ -114,6 +114,7 @@ class RedditStreamer:
             print("comments added")
 
     def update_comment(self):
+        print(len(self.comments_to_update), len(self.comments_jobs), len(self.active_comments))
         comment_id = self.comments_jobs.pop()
         try:
             self.comments_to_update[id] = self.reddit.comment(id=comment_id).ups
