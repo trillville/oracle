@@ -114,7 +114,7 @@ class RedditStreamer:
                 pass
         if len(self.comment_update_batch) >= 100:
             s = time.time()
-            for comment in self.r.info(fullname=self.comment_update_batch):
+            for comment in self.r.info(fullnames=self.comment_update_batch):
                 self.comments.append(
                     {
                         "posted": datetime.utcfromtimestamp(comment.created_utc),
@@ -184,7 +184,7 @@ def main():
             streamer.timers["insert_pg"] += time.time() - s
 
         total = c + p + u
-        if total % 100 == 0:
+        if c+p % 100 == 0:
             print(f"comments added: {c}, posts added: {p}, comments updated: {u}")
             print(streamer.timers)
             print(f"APS: {total / (time.time() - overall_start)}")
