@@ -131,8 +131,8 @@ class RedditStreamer:
                     }
                 )
                 s = time.time()
-                if self.r.exists(comment_id):
-                    self.comments_jobs.appendleft(comment_id)
+                if self.r.exists(comment.id):
+                    self.comments_jobs.appendleft(comment.id)
                 self.timers["check_exists"] += time.time() - s
             self.timers["pull_comments"] += time.time() - s
             self.comment_update_batch = []
