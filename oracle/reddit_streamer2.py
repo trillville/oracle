@@ -136,9 +136,7 @@ class RedditStreamer:
                     WHERE
                         id = %s;
                 """,
-                    [
-                        ({**tmp_comment} for tmp_comment in self.comments_to_update)
-                    ],
+                    ({**update_key} for update_key in self.comments_to_update),
                 )
             print("comments updated")
 
