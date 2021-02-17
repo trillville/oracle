@@ -81,7 +81,7 @@ class RedditStreamer:
         keywords = [
             x.replace("$", "") for x in self.keyword_processor.extract_keywords(comment.body)
         ]
-        timers["finding_keywords"] += time.time() - s
+        self.timers["finding_keywords"] += time.time() - s
         self.comments.append(
             {
                 "posted": datetime.utcfromtimestamp(comment.created_utc),
