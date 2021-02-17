@@ -128,6 +128,7 @@ class RedditStreamer:
     def update_comment(self):
         try:
             comment_id = self.comments_jobs.pop()
+            s = time.time()
             self.comments_to_update.append(
                 {
                     "id": comment_id,
@@ -135,6 +136,7 @@ class RedditStreamer:
                     "time": datetime.now(),
                 }
             )
+            self.timers["pull_comments"] += time.time() - s
             s = time.time()
             if self.r.exists(comment_id):
                 self.timers["check_exists"] += time.time() - s
