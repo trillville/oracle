@@ -111,7 +111,6 @@ class RedditStreamer:
                     ({**tmp_comment} for tmp_comment in self.comments),
                 )
             self.comments = []
-            print("comments added")
 
     def update_comment(self):
         comment_id = self.comments_jobs.pop()
@@ -143,7 +142,6 @@ class RedditStreamer:
                     ({**update_key} for update_key in self.comments_to_update),
                 )
             self.comments_to_update
-            print("comments updated")
 
 
 def main():
@@ -153,7 +151,6 @@ def main():
         for post in streamer.posts_stream:
             if post is None:
                 break
-            print("post updated")
             streamer.insert_post(post)
 
         for comment in streamer.comments_stream:
