@@ -38,6 +38,8 @@ class RedditStreamer:
             "insert_and_update_pg": 0.0,
             "update_only_pg": 0.0,
             "check_exists": 0.0,
+            "pull_posts": 0.0,
+            "pull_comments": 0.0,
         }
 
     def insert_post(self, submission):
@@ -165,15 +167,19 @@ def main():
 
     while True:
         for post in streamer.posts_stream:
+            s = time.time()
             if post is None:
                 break
             p += 1
+            streamer.timers["pull_posts"] += time.now() - s
             streamer.insert_post(post)
 
         for comment in streamer.comments_stream:
+            s = time.time()
             if comment is None:
                 break
             c += 1
+            streamer.timers["pull_comments"] += time.now() - s
             streamer.insert_comment(comment)
 
         u += 2
