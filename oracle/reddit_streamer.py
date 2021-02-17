@@ -115,6 +115,9 @@ class RedditStreamer:
         if len(self.comment_update_batch) >= 100:
             s = time.time()
             for comment in self.reddit.info(fullnames=self.comment_update_batch):
+                keywords = [
+                    x.replace("$", "") for x in self.keyword_processor.extract_keywords(comment.body)
+                ]
                 self.comments.append(
                     {
                         "posted": datetime.utcfromtimestamp(comment.created_utc),
