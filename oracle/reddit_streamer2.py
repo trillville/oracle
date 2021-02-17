@@ -28,13 +28,17 @@ class RedditStreamer:
         self.keyword_processor = KeywordProcessor()
         self.keyword_processor.add_keywords_from_list(NYSE + NASDAQ + AMEX)
         self.comments = []
-        self.active_comments = TTLCache(maxsize=50000, ttl=60*60*48)
+        self.active_comments = TTLCache(maxsize=50000, ttl=60 * 60 * 48)
         self.comments_jobs = deque()
         self.comments_to_update = []
 
     def insert_post(self, submission):
-        title_keywords = [x.replace("$", "") for x in self.keyword_processor.extract_keywords(submission.title)]
-        text_keywords = [x.replace("$", "") for x in self.keyword_processor.extract_keywords(submission.selftext)]
+        title_keywords = [
+            x.replace("$", "") for x in self.keyword_processor.extract_keywords(submission.title)
+        ]
+        text_keywords = [
+            x.replace("$", "") for x in self.keyword_processor.extract_keywords(submission.selftext)
+        ]
         sub = {
             "posted": datetime.utcfromtimestamp(submission.created_utc),
             "last_updated": datetime.utcfromtimestamp(submission.created_utc),
@@ -65,7 +69,9 @@ class RedditStreamer:
             )
 
     def insert_comment(self, comment):
-        keywords = [x.replace("$", "") for x in self.keyword_processor.extract_keywords(comment.body)]
+        keywords = [
+            x.replace("$", "") for x in self.keyword_processor.extract_keywords(comment.body)
+        ]
         self.comments.append(
             {
                 "posted": datetime.utcfromtimestamp(comment.created_utc),
@@ -77,7 +83,7 @@ class RedditStreamer:
                 "upvotes": comment.ups,
                 "comments": 0,
             }
-        )]
+        )
         if len(keywords) > 0:
             self.active_comments[comment.id] = None
             self.comments_jobs.appendleft(comment.id)
@@ -128,9 +134,13 @@ class RedditStreamer:
                     WHERE
                         id = %s;
                 """,
-                    [(self.comments_to_update[key], datetime.now(), key) for key in self.comments_to_update.keys()],
+                    [
+                        (self.comments_to_update[key], datetime.now(), key)
+                        for key in self.comments_to_update.keys()
+                    ],
                 )
                 print("comments updated")
+
 
 def main():
     streamer = RedditStreamer()
