@@ -171,7 +171,7 @@ def main():
             if post is None:
                 break
             p += 1
-            streamer.timers["pull_posts"] += time.now() - s
+            streamer.timers["pull_posts"] += time.time() - s
             streamer.insert_post(post)
 
         for comment in streamer.comments_stream:
@@ -179,7 +179,7 @@ def main():
             if comment is None:
                 break
             c += 1
-            streamer.timers["pull_comments"] += time.now() - s
+            streamer.timers["pull_comments"] += time.time() - s
             streamer.insert_comment(comment)
 
         u += 2
