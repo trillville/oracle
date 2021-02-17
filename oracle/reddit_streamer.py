@@ -85,7 +85,7 @@ class RedditStreamer:
             }
         )
         if len(keywords) > 0:
-            self.r.set(name=comment.id, value=None, ex=2*24*60*60)
+            self.r.set(name=comment.id, value="", ex=2*24*60*60)
             self.comments_jobs.appendleft(comment.id)
         with self.connection.cursor() as cursor:
             cursor.execute(
