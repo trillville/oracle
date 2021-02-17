@@ -119,6 +119,7 @@ class RedditStreamer:
             self.comments_to_update[id] = self.reddit.comment(id=comment_id).ups
             if comment_id in self.active_comments:
                 self.comments_jobs.appendleft(comment_id)
+            print(len(self.comments_to_update))
         except:
             pass
 
@@ -139,7 +140,7 @@ class RedditStreamer:
                         for key in self.comments_to_update.keys()
                     ],
                 )
-                print("comments updated")
+            print("comments updated")
 
 
 def main():
