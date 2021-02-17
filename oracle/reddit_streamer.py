@@ -8,6 +8,7 @@ import psycopg2
 import psycopg2.extras
 from datetime import datetime
 import redis
+import time
 
 
 class RedditStreamer:
@@ -31,6 +32,13 @@ class RedditStreamer:
         self.comments = []
         self.comments_to_update = []
         self.comments_jobs = deque(self.r.keys().reverse() or [])
+        self.timers = {
+            "finding_keywords": 0.0,
+            "redis_set": 0.0,
+            "insert_and_update_pg": 0.0,
+            "update_only_pg": 0.0,
+            "check_exists": 0.0,
+        }
 
     def insert_post(self, submission):
         title_keywords = [
@@ -69,9 +77,11 @@ class RedditStreamer:
             )
 
     def insert_comment(self, comment):
+        s = time.time()
         keywords = [
             x.replace("$", "") for x in self.keyword_processor.extract_keywords(comment.body)
         ]
+        timers["finding_keywords"] += time.time() - s
         self.comments.append(
             {
                 "posted": datetime.utcfromtimestamp(comment.created_utc),
@@ -82,13 +92,16 @@ class RedditStreamer:
                 "sentiment": TextBlob(comment.body).sentiment.polarity,
                 "upvotes": comment.ups,
                 "comments": 0,
-                "parent_id": comment.parent_id[3:]
+                "parent_id": comment.parent_id[3:],
             }
         )
         if len(keywords) > 0:
+            s = time.time()
             self.r.set(name=comment.id, value="", ex=2 * 24 * 60 * 60)
             self.comments_jobs.appendleft(comment.id)
+            self.timers["redis_set"] += time.time() - s
         if len(self.comments) >= 50:
+            s = time.time()
             with self.connection.cursor() as cursor:
                 psycopg2.extras.execute_batch(
                     cursor,
@@ -108,6 +121,7 @@ class RedditStreamer:
                     ({**tmp_comment} for tmp_comment in self.comments),
                 )
             self.comments = []
+            self.timers["insert_and_update_pg"] += time.time() - s
 
     def update_comment(self):
         try:
@@ -119,12 +133,15 @@ class RedditStreamer:
                     "time": datetime.now(),
                 }
             )
+            s = time.time()
             if self.r.exists(comment_id):
+                self.timers["check_exists"] += time.time() - s
                 self.comments_jobs.appendleft(comment_id)
         except:
             pass
 
         if len(self.comments_to_update) >= 50:
+            s = time.time()
             with self.connection.cursor() as cursor:
                 psycopg2.extras.execute_batch(
                     cursor,
@@ -139,6 +156,7 @@ class RedditStreamer:
                     ({**update_key} for update_key in self.comments_to_update),
                 )
             self.comments_to_update = []
+            self.timers["update_only_pg"] += time.time() - s
 
 
 def main():
@@ -165,6 +183,7 @@ def main():
         total = c + p + u
         if total % 100 == 0:
             print(f"comments added: {c}, posts added: {p}, comments updated: {u}")
+            print(streamer.timers)
 
 
 if __name__ == "__main__":
