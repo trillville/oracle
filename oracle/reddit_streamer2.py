@@ -137,8 +137,7 @@ class RedditStreamer:
                         id = %s;
                 """,
                     [
-                        (self.comments_to_update[key], datetime.now(), key)
-                        for key in self.comments_to_update.keys()
+                        ({**tmp_comment} for tmp_comment in self.comments_to_update)
                     ],
                 )
             print("comments updated")
