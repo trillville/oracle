@@ -178,7 +178,6 @@ def main():
     streamer.t3 = 0
     streamer.t1 = 0
     overall_start = time.time()
-    a = self.keys
 
     while True:
         for post in streamer.posts_stream:
