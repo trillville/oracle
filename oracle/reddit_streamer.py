@@ -147,18 +147,18 @@ class RedditStreamer:
                     num_comments = item.num_comments
                 else:
                     self.t1 += 1
-                    num_comments = self.r.get(comment.name) or 0
+                    num_comments = self.r.get(item.name) or 0
                 updates.append(
                     {
-                        "posted": datetime.utcfromtimestamp(comment.created_utc),
+                        "posted": datetime.utcfromtimestamp(item.created_utc),
                         "last_updated": datetime.now(),
                         "id": item.name,
                         "upvotes": item.ups,
                         "comments": num_comments
                     }
                 )
-                if self.r.exists(comment.name):
-                    self.comments_jobs.appendleft(comment.name)
+                if self.r.exists(item.name):
+                    self.comments_jobs.appendleft(item.name)
             with self.connection.cursor() as cursor:
                 psycopg2.extras.execute_batch(
                     cursor,
