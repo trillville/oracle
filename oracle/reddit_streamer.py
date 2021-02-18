@@ -114,13 +114,6 @@ class RedditStreamer:
                     %(upvotes)s,
                     %(comments)s
                     );
-                    INSERT INTO updates VALUES (
-                    %(posted)s,
-                    %(last_updated)s,
-                    %(id)s,
-                    %(upvotes)s,
-                    %(comments)s
-                    );
                 """,
                     ({**tmp_comment} for tmp_comment in self.comments),
                 )
