@@ -123,7 +123,7 @@ connection.autocommit = True
 def create_staging_table4(cursor) -> None:
     cursor.execute("""
     DROP TABLE IF EXISTS comments_updates;
-    CREATE TABLE comments_updates (
+    CREATE TABLE updates (
         posted              TIMESTAMP WITH TIME ZONE,
         last_updated        TIMESTAMP WITH TIME ZONE,
         id                  TEXT,

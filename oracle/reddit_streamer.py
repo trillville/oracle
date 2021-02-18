@@ -31,16 +31,8 @@ class RedditStreamer:
         self.keyword_processor = KeywordProcessor()
         self.keyword_processor.add_keywords_from_list(NYSE + NASDAQ + AMEX)
         self.comments = []
-        self.comments_jobs = deque(self.r.keys().reverse() or [])
-        self.timers = {
-            "finding_keywords": 0.0,
-            "redis_set": 0.0,
-            "insert_pg": 0.0,
-            "check_exists": 0.0,
-            "pull_posts": 0.0,
-            "pull_comments": 0.0,
-        }
-        self.comment_update_batch = []
+        self.jobs = deque(self.r.keys().reverse() or [])
+        self.update_batch = []
 
     def insert_post(self, submission):
         title_keywords = [
@@ -52,7 +44,7 @@ class RedditStreamer:
         sub = {
             "posted": datetime.utcfromtimestamp(submission.created_utc),
             "last_updated": datetime.utcfromtimestamp(submission.created_utc),
-            "id": submission.id,
+            "id": submission.name,
             "title": submission.title,
             "title_mentions": list(set(title_keywords)),
             "text_mentions": list(set(text_keywords)),
@@ -74,21 +66,29 @@ class RedditStreamer:
                 %(upvotes)s,
                 %(comments)s
                 );
+                INSERT INTO updates VALUES (
+                %(posted)s,
+                %(last_updated)s,
+                %(id)s,
+                %(upvotes)s,
+                %(comments)s
+                );
             """,
                 {**sub},
             )
+            if len(title_keywords) > 0 or len(text_keywords) > 0:
+                self.r.set(name=submission.name, value=0, ex=2 * 24 * 60 * 60)
+                self.jobs.appendleft(submission.name)
 
     def insert_comment(self, comment):
-        s = time.time()
         keywords = [
             x.replace("$", "") for x in self.keyword_processor.extract_keywords(comment.body)
         ]
-        self.timers["finding_keywords"] += time.time() - s
         self.comments.append(
             {
                 "posted": datetime.utcfromtimestamp(comment.created_utc),
                 "last_updated": datetime.utcfromtimestamp(comment.created_utc),
-                "id": comment.id,
+                "id": comment.name,
                 "text": comment.body[:50],
                 "text_mentions": list(set(keywords)),
                 "sentiment": TextBlob(comment.body).sentiment.polarity,
@@ -96,18 +96,16 @@ class RedditStreamer:
                 "comments": 0,
             }
         )
-        parent_id = comment.parent_id[3:]
+        parent_id = comment.parent_id
         if parent_id is not None and self.r.exists(parent_id):
             self.r.incr(parent_id)
 
         if len(keywords) > 0:
-            s = time.time()
-            self.r.set(name=comment.id, value=0, ex=2 * 24 * 60 * 60)
-            self.comments_jobs.appendleft(comment.id)
-            self.timers["redis_set"] += time.time() - s
+            self.r.set(name=comment.name, value=0, ex=2 * 24 * 60 * 60)
+            self.jobs.appendleft(comment.name)
+
 
         if len(self.comments) >= 100:
-            s = time.time()
             with self.connection.cursor() as cursor:
                 psycopg2.extras.execute_batch(
                     cursor,
@@ -122,43 +120,7 @@ class RedditStreamer:
                     %(upvotes)s,
                     %(comments)s
                     );
-                """,
-                    ({**tmp_comment} for tmp_comment in self.comments),
-                )
-            self.comments = []
-            self.timers["insert_pg"] += time.time() - s
-
-
-    def update_comment(self):
-        for i in range(10):
-            try:
-                self.comment_update_batch.append("t1_" + self.comments_jobs.pop())
-            except:
-                pass
-        if len(self.comment_update_batch) >= 100:
-            updated_comments = []
-            s1 = time.time()
-            for comment in self.reddit.info(fullnames=self.comment_update_batch):
-                updated_comments.append(
-                    {
-                        "posted": datetime.utcfromtimestamp(comment.created_utc),
-                        "last_updated": datetime.now(),
-                        "id": comment.id,
-                        "upvotes": comment.ups,
-                        "comments": self.r.get(comment.id) or 0
-                    }
-                )
-                s2 = time.time()
-                if self.r.exists(comment.id):
-                    self.comments_jobs.appendleft(comment.id)
-                self.timers["check_exists"] += time.time() - s2
-            self.timers["pull_comments"] += time.time() - s1
-            s = time.time()
-            with streamer.connection.cursor() as cursor:
-                psycopg2.extras.execute_batch(
-                    cursor,
-                    """
-                    INSERT INTO comments_updates VALUES (
+                    INSERT INTO updates VALUES (
                     %(posted)s,
                     %(last_updated)s,
                     %(id)s,
@@ -166,42 +128,78 @@ class RedditStreamer:
                     %(comments)s
                     );
                 """,
-                    ({**tmp_comment} for tmp_comment in streamer.comments),
+                    ({**tmp_comment} for tmp_comment in self.comments),
                 )
-            streamer.timers["insert_pg"] += time.time() - s
+            self.comments = []
+
+    def update_comment(self):
+        for i in range(20):
+            try:
+                self.update_batch.append(self.jobs.pop())
+            except:
+                pass
+        if len(self.update_batch) >= 100:
+            updates = []
+            for item in self.reddit.info(fullnames=self.comment_update_batch):
+                if item.name.startswith("t3"):
+                    self.t3 += 1
+                    num_comments = item.num_comments
+                else:
+                    self.t1 += 1
+                    num_comments = self.r.get(comment.name) or 0
+                updates.append(
+                    {
+                        "posted": datetime.utcfromtimestamp(comment.created_utc),
+                        "last_updated": datetime.now(),
+                        "id": item.name,
+                        "upvotes": item.ups,
+                        "comments": num_comments
+                    }
+                )
+                if self.r.exists(comment.name):
+                    self.comments_jobs.appendleft(comment.name)
+            with self.connection.cursor() as cursor:
+                psycopg2.extras.execute_batch(
+                    cursor,
+                    """
+                    INSERT INTO updates VALUES (
+                    %(posted)s,
+                    %(last_updated)s,
+                    %(id)s,
+                    %(upvotes)s,
+                    %(comments)s
+                    );
+                """,
+                    ({**tmp_comment} for tmp_comment in updates),
+                )
             self.comment_update_batch = []
 
 def main():
     streamer = RedditStreamer()
-    c, p, u = 0, 0, 0
+    c, p = 0, 0
+    streamer.t3 = 0
+    streamer.t1 = 0
     overall_start = time.time()
 
     while True:
-        s = time.time()
         for post in streamer.posts_stream:
             if post is None:
                 break
             p += 1
-            streamer.timers["pull_posts"] += time.time() - s
             streamer.insert_post(post)
-            s = time.time()
 
-        s = time.time()
         for comment in streamer.comments_stream:
             if comment is None:
                 break
             c += 1
-            streamer.timers["pull_comments"] += time.time() - s
             streamer.insert_comment(comment)
-            s = time.time()
 
-        u += 10
+        u += 20
         streamer.update_comment()
 
         total = c + p + u
-        if u % 100 == 0:
-            print(f"comments added: {c}, posts added: {p}, comments updated: {u}")
-            print(streamer.timers)
+        if streamer.t1 % 100 == 0:
+            print(f"comments added: {c}, posts added: {p}, comments updated: {streamer.t1}, posts updated: {streamer.t3}")
             print(f"APS: {total / (time.time() - overall_start)}")
 
 
