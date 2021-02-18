@@ -137,6 +137,7 @@ class RedditStreamer:
         for i in range(20):
             try:
                 self.update_batch.append(self.jobs.pop())
+                print(f"batch length: {len(self.update_batch)}")
             except:
                 pass
         if len(self.update_batch) >= 100:
