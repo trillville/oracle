@@ -13,10 +13,11 @@ import time
 
 class RedditStreamer:
     def __init__(self):
-        self.r = redis.StrictRedis.from_url(os.environ.get("REDIS_URL"), charset="utf-8", decode_responses=True)
+        self.r = redis.StrictRedis.from_url(
+            os.environ.get("REDIS_URL"), charset="utf-8", decode_responses=True
+        )
         self.jobs = deque(self.r.keys() or [])
-        print(len(self.jobs))
-        self.r.set_response_callback('GET', int)
+        self.r.set_response_callback("GET", int)
         self.connection = psycopg2.connect(os.environ["DATABASE_URL"], sslmode="require")
         self.connection.autocommit = True
         self.reddit = praw.Reddit(
@@ -67,13 +68,6 @@ class RedditStreamer:
                 %(upvotes)s,
                 %(comments)s
                 );
-                INSERT INTO updates VALUES (
-                %(posted)s,
-                %(last_updated)s,
-                %(id)s,
-                %(upvotes)s,
-                %(comments)s
-                );
             """,
                 {**sub},
             )
@@ -102,9 +96,8 @@ class RedditStreamer:
             self.r.incr(parent_id)
 
         if len(keywords) > 0:
-            self.r.set(name=comment.name, value=0, ex=2 * 24 * 60 * 60)
+            self.r.set(name=comment.name, value=0, ex=36 * 60 * 60)
             self.jobs.appendleft(comment.name)
-
 
         if len(self.comments) >= 100:
             with self.connection.cursor() as cursor:
@@ -154,7 +147,7 @@ class RedditStreamer:
                         "last_updated": datetime.now(),
                         "id": item.name,
                         "upvotes": item.ups,
-                        "comments": num_comments
+                        "comments": num_comments,
                     }
                 )
             with self.connection.cursor() as cursor:
@@ -172,6 +165,7 @@ class RedditStreamer:
                     ({**tmp_comment} for tmp_comment in updates),
                 )
             self.update_batch = []
+
 
 def main():
     streamer = RedditStreamer()
@@ -198,7 +192,9 @@ def main():
         streamer.update_comment()
 
         if inc % 100 == 0:
-            print(f"comments added: {c}, posts added: {p}, comments updated: {streamer.t1}, posts updated: {streamer.t3}")
+            print(
+                f"comments added: {c}, posts added: {p}, comments updated: {streamer.t1}, posts updated: {streamer.t3}"
+            )
             print(f"APS: {(c + p + streamer.t3 + streamer.t1) / (time.time() - overall_start)}")
 
 
