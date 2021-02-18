@@ -14,8 +14,8 @@ import time
 class RedditStreamer:
     def __init__(self):
         self.r = redis.StrictRedis.from_url(os.environ.get("REDIS_URL"), charset="utf-8", decode_responses=True)
-        self.jobs = deque(self.r.keys().reverse() or [])
-        print(self.jobs)
+        self.jobs = deque(r.keys() or [])
+        print(len(self.jobs))
         self.r.set_response_callback('GET', int)
         self.connection = psycopg2.connect(os.environ["DATABASE_URL"], sslmode="require")
         self.connection.autocommit = True
