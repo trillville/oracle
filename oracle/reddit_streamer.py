@@ -194,10 +194,9 @@ def main():
             c += 1
             streamer.insert_comment(comment)
 
-        u += 20
         streamer.update_comment()
 
-        total = c + p + u
+        total = c + p + streamer.t1 + streamer.t3
         if streamer.t1 % 100 == 0:
             print(f"comments added: {c}, posts added: {p}, comments updated: {streamer.t1}, posts updated: {streamer.t3}")
             print(f"APS: {total / (time.time() - overall_start)}")
