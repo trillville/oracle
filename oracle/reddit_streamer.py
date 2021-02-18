@@ -13,7 +13,7 @@ import time
 
 class RedditStreamer:
     def __init__(self):
-        self.r = redis.StrictRedis.from_url(os.environ.get("REDIS_URL"))
+        self.r = redis.StrictRedis.from_url(os.environ.get("REDIS_URL"), charset="utf-8", decode_responses=True)
         self.jobs = deque(self.r.keys().reverse() or [])
         print(self.jobs)
         self.r.set_response_callback('GET', int)
@@ -134,9 +134,11 @@ class RedditStreamer:
             self.comments = []
 
     def update_comment(self):
-        print(f"joblist size: {len(self.jobs)}")
         for i in range(min(20, len(self.jobs))):
-            self.update_batch.append(self.jobs.pop())
+            id = self.jobs.pop()
+            self.update_batch.append(id)
+            if self.r.exists(id):
+                self.jobs.appendleft(id)
         if len(self.update_batch) >= 100:
             updates = []
             for item in self.reddit.info(fullnames=self.update_batch):
@@ -155,8 +157,6 @@ class RedditStreamer:
                         "comments": num_comments
                     }
                 )
-                if self.r.exists(item.name):
-                    self.jobs.appendleft(item.name)
             with self.connection.cursor() as cursor:
                 psycopg2.extras.execute_batch(
                     cursor,
@@ -179,8 +179,10 @@ def main():
     streamer.t3 = 0
     streamer.t1 = 0
     overall_start = time.time()
+    inc = 0
 
     while True:
+        inc += 1
         for post in streamer.posts_stream:
             if post is None:
                 break
@@ -195,8 +197,7 @@ def main():
 
         streamer.update_comment()
 
-        total = c + p + streamer.t1 + streamer.t3
-        if streamer.t1 % 100 == 0:
+        if inc % 100 == 0:
             print(f"comments added: {c}, posts added: {p}, comments updated: {streamer.t1}, posts updated: {streamer.t3}")
             print(f"APS: {total / (time.time() - overall_start)}")
 
