@@ -14,6 +14,7 @@ import time
 class RedditStreamer:
     def __init__(self):
         self.r = redis.StrictRedis.from_url(os.environ.get("REDIS_URL"))
+        self.jobs = deque(self.r.keys().reverse() or [])
         self.r.set_response_callback('GET', int)
         self.connection = psycopg2.connect(os.environ["DATABASE_URL"], sslmode="require")
         self.connection.autocommit = True
@@ -31,7 +32,6 @@ class RedditStreamer:
         self.keyword_processor = KeywordProcessor()
         self.keyword_processor.add_keywords_from_list(NYSE + NASDAQ + AMEX)
         self.comments = []
-        self.jobs = deque(self.r.keys().reverse() or [])
         self.update_batch = []
 
     def insert_post(self, submission):
@@ -178,6 +178,7 @@ def main():
     streamer.t3 = 0
     streamer.t1 = 0
     overall_start = time.time()
+    a = self.keys
 
     while True:
         for post in streamer.posts_stream:
