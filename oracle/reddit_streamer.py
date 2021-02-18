@@ -133,6 +133,7 @@ class RedditStreamer:
             self.comments = []
 
     def update_comment(self):
+        print(f"batch size: len(self.update_batch)")
         for i in range(20):
             try:
                 self.update_batch.append(self.jobs.pop())
