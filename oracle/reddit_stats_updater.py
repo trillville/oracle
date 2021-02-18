@@ -41,7 +41,7 @@ class RedditUpdater:
                 DELETE FROM updates
                 WHERE posted < %s;
                 """,
-                [datetime.now() - timedelta(hours=120), datetime.now() - timedelta(hours=120), datetime.now() - timedelta(hours=120],
+                [datetime.now() - timedelta(hours=120), datetime.now() - timedelta(hours=120), datetime.now() - timedelta(hours=120)],
             )
 
     def update_posts(self, update_dict):
