@@ -38,8 +38,10 @@ class RedditUpdater:
                 WHERE posted < %s;
                 DELETE FROM comments
                 WHERE posted < %s;
+                DELETE FROM updates
+                WHERE posted < %s;
                 """,
-                [datetime.now() - timedelta(hours=48), datetime.now() - timedelta(hours=48)],
+                [datetime.now() - timedelta(hours=120), datetime.now() - timedelta(hours=120), datetime.now() - timedelta(hours=120],
             )
 
     def update_posts(self, update_dict):
@@ -159,34 +161,10 @@ class RedditUpdater:
 def main():
     updater = RedditUpdater()
     updater.delete_old()
-    comment_ids, update_dict = updater.pull_ids("comments")
-    start = time.time()
-    for comment_id in comment_ids:
-        try:
-            comment = updater.reddit.comment(id=comment_id)
-            update_dict[comment_id]["upvotes"] = comment.ups
-        except:
-            del update_dict[comment_id]
-    updater.update_comments(update_dict)
-    print(
-        f"Comments Updated! Time Spent: {time.time() - start}, Records Updated: {len(update_dict)}"
-    )
-
-    post_ids, update_dict = updater.pull_ids("posts")
-    start = time.time()
-    for post_id in post_ids:
-        try:
-            post = updater.reddit.submission(id=post_id)
-            update_dict[post_id]["upvotes"] = post.ups
-            update_dict[post_id]["comments"] = post.num_comments
-        except:
-            del update_dict[post_id]
-    updater.update_posts(update_dict)
-    print(f"Posts Updated! Time Spent: {time.time() - start}, Records Updated: {len(update_dict)}")
-
-    start = time.time()
-    updater.update_tickers()
-    print(f"Tickers Updated! Time Spent: {time.time() - start}")
+    #
+    # start = time.time()
+    # updater.update_tickers()
+    # print(f"Tickers Updated! Time Spent: {time.time() - start}")
 
 
 if __name__ == "__main__":
