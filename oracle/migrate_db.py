@@ -80,17 +80,17 @@ connection.autocommit = True
 #
 # def create_staging_table2(cursor) -> None:
 #     cursor.execute("""
-#         DROP TABLE IF EXISTS comments;
-#         CREATE TABLE comments (
-#             posted              TIMESTAMP WITH TIME ZONE,
-#             last_updated        TIMESTAMP WITH TIME ZONE,
-#             id                  TEXT,
-#             text                TEXT,
-#             text_mentions       TEXT[],
-#             sentiment           DECIMAL,
-#             upvotes             INTEGER,
-#             comments            INTEGER
-#         );
+        # DROP TABLE IF EXISTS comments;
+        # CREATE TABLE comments (
+        #     posted              TIMESTAMP WITH TIME ZONE,
+        #     last_updated        TIMESTAMP WITH TIME ZONE,
+        #     id                  TEXT,
+        #     text                TEXT,
+        #     text_mentions       TEXT[],
+        #     sentiment           DECIMAL,
+        #     upvotes             INTEGER,
+        #     comments            INTEGER
+        # );
 #     """)
 
 # def create_staging_table3(cursor) -> None:
@@ -111,14 +111,26 @@ connection.autocommit = True
 #         );
 #         CREATE UNIQUE INDEX CONCURRENTLY ticker_date_index ON tickers (date, ticker);
 #     """)
+#
+# def create_staging_table3(cursor) -> None:
+#     cursor.execute("""
+#         ALTER TABLE tickers
+#         ADD COLUMN comment_mentions INTEGER,
+#         ADD COLUMN post_title_mentions INTEGER,
+#         ADD COLUMN post_text_mentions INTEGER;
+#     """)
 
-def create_staging_table3(cursor) -> None:
+def create_staging_table4(cursor) -> None:
     cursor.execute("""
-        ALTER TABLE tickers
-        ADD COLUMN comment_mentions INTEGER,
-        ADD COLUMN post_title_mentions INTEGER,
-        ADD COLUMN post_text_mentions INTEGER;
+    DROP TABLE IF EXISTS comments_updates;
+    CREATE TABLE comments_updates (
+        posted              TIMESTAMP WITH TIME ZONE,
+        last_updated        TIMESTAMP WITH TIME ZONE,
+        id                  TEXT,
+        upvotes             INTEGER,
+        comments            INTEGER
+    );
     """)
 
 with connection.cursor() as cursor:
-    create_staging_table3(cursor)
+    create_staging_table4(cursor)
