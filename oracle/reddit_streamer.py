@@ -133,7 +133,6 @@ class RedditStreamer:
             self.comments = []
 
     def update_comment(self):
-        print(f"batch size: len(self.update_batch)")
         for i in range(20):
             try:
                 self.update_batch.append(self.jobs.pop())
@@ -141,7 +140,7 @@ class RedditStreamer:
                 pass
         if len(self.update_batch) >= 100:
             updates = []
-            for item in self.reddit.info(fullnames=self.comment_update_batch):
+            for item in self.reddit.info(fullnames=self.update_batch):
                 if item.name.startswith("t3"):
                     self.t3 += 1
                     num_comments = item.num_comments
@@ -173,7 +172,7 @@ class RedditStreamer:
                 """,
                     ({**tmp_comment} for tmp_comment in updates),
                 )
-            self.comment_update_batch = []
+            self.update_batch = []
 
 def main():
     streamer = RedditStreamer()
