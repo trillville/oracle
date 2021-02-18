@@ -199,7 +199,7 @@ def main():
 
         if inc % 100 == 0:
             print(f"comments added: {c}, posts added: {p}, comments updated: {streamer.t1}, posts updated: {streamer.t3}")
-            print(f"APS: {total / (time.time() - overall_start)}")
+            print(f"APS: {(c + p + streamer.t3 + streamer.t1) / (time.time() - overall_start)}")
 
 
 if __name__ == "__main__":
