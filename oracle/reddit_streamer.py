@@ -127,7 +127,7 @@ class RedditStreamer:
             self.comments = []
 
     def update_comment(self):
-        for i in range(min(20, len(self.jobs))):
+        for i in range(min(50, len(self.jobs))):
             id = self.jobs.pop()
             self.update_batch.append(id)
             if self.r.exists(id):
