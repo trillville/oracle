@@ -132,7 +132,7 @@ class RedditStreamer:
                     num_comments = item.num_comments
                 elif item.name.startswith("t1"):
                     self.t1 += 1
-                    num_comments = int(self.r.get(item.name)) or 0
+                    num_comments = int(self.r.get(item.name) or 0)
                 else:
                     print(f"DEBUG: {item.name}")
                     num_comments = 0
