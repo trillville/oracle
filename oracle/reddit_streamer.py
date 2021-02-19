@@ -135,7 +135,7 @@ class RedditStreamer:
                     self.t1 += 1
                     num_comments = self.r.get(item.name) or 0
                 else:
-                    print(f"DEBUG: "{item.name})
+                    print(f"DEBUG: "{item.name}")
                     num_comments = 0
                 updates.append(
                     {
