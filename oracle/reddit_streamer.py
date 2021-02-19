@@ -131,9 +131,12 @@ class RedditStreamer:
                 if item.name.startswith("t3"):
                     self.t3 += 1
                     num_comments = item.num_comments
-                else:
+                elif item.name.startswith("t1"):
                     self.t1 += 1
                     num_comments = self.r.get(item.name) or 0
+                else:
+                    print(f"DEBUG: "{item.name})
+                    num_comments = 0
                 updates.append(
                     {
                         "posted": datetime.utcfromtimestamp(item.created_utc),
