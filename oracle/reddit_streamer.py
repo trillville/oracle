@@ -17,7 +17,6 @@ class RedditStreamer:
             os.environ.get("REDIS_URL"), charset="utf-8", decode_responses=True
         )
         self.jobs = deque(self.r.keys() or [])
-        self.r.set_response_callback("GET", int)
         self.connection = psycopg2.connect(os.environ["DATABASE_URL"], sslmode="require")
         self.connection.autocommit = True
         self.reddit = praw.Reddit(
@@ -133,7 +132,7 @@ class RedditStreamer:
                     num_comments = item.num_comments
                 elif item.name.startswith("t1"):
                     self.t1 += 1
-                    num_comments = self.r.get(item.name) or 0
+                    num_comments = int(self.r.get(item.name)) or 0
                 else:
                     print(f"DEBUG: {item.name}")
                     num_comments = 0
