@@ -183,8 +183,8 @@ def main():
         for i in range(min(50, len(streamer.jobs))):
             id = streamer.jobs.pop()
             streamer.update_batch.append(id)
-            if self.r.exists(id):
-                self.jobs.appendleft(id)
+            if streamer.r.exists(id):
+                streamer.jobs.appendleft(id)
 
         if len(streamer.update_batch) >= 100:
             try:
