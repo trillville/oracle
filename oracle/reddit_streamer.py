@@ -1,5 +1,6 @@
 import os
 import praw
+from prawcore.exceptions import ServerError
 from flashtext import KeywordProcessor
 from textblob import TextBlob
 from tickers import NYSE, NASDAQ, AMEX
@@ -9,6 +10,7 @@ import psycopg2.extras
 from datetime import datetime
 import redis
 import time
+from time import time, sleep
 
 
 class RedditStreamer:
@@ -118,48 +120,42 @@ class RedditStreamer:
                 )
             self.comments = []
 
-    def update_comment(self):
-        for i in range(min(50, len(self.jobs))):
-            id = self.jobs.pop()
-            self.update_batch.append(id)
-            if self.r.exists(id):
-                self.jobs.appendleft(id)
-        if len(self.update_batch) >= 100:
-            updates = []
-            for item in self.reddit.info(fullnames=self.update_batch):
-                if item.name.startswith("t3"):
-                    self.t3 += 1
-                    num_comments = item.num_comments
-                elif item.name.startswith("t1"):
-                    self.t1 += 1
-                    num_comments = int(self.r.get(item.name) or 0)
-                else:
-                    print(f"DEBUG: {item.name}")
-                    num_comments = 0
-                updates.append(
-                    {
-                        "posted": datetime.utcfromtimestamp(item.created_utc),
-                        "last_updated": datetime.now(),
-                        "id": item.name,
-                        "upvotes": item.ups,
-                        "comments": num_comments,
-                    }
-                )
-            with self.connection.cursor() as cursor:
-                psycopg2.extras.execute_batch(
-                    cursor,
-                    """
-                    INSERT INTO updates VALUES (
-                    %(posted)s,
-                    %(last_updated)s,
-                    %(id)s,
-                    %(upvotes)s,
-                    %(comments)s
-                    );
-                """,
-                    ({**tmp_comment} for tmp_comment in updates),
-                )
-            self.update_batch = []
+    def update_comments(self):
+        updates = []
+        for item in self.reddit.info(fullnames=self.update_batch):
+            if item.name.startswith("t3"):
+                self.t3 += 1
+                num_comments = item.num_comments
+            elif item.name.startswith("t1"):
+                self.t1 += 1
+                num_comments = int(self.r.get(item.name) or 0)
+            else:
+                print(f"DEBUG: {item.name}")
+                num_comments = 0
+            updates.append(
+                {
+                    "posted": datetime.utcfromtimestamp(item.created_utc),
+                    "last_updated": datetime.now(),
+                    "id": item.name,
+                    "upvotes": item.ups,
+                    "comments": num_comments,
+                }
+            )
+        with self.connection.cursor() as cursor:
+            psycopg2.extras.execute_batch(
+                cursor,
+                """
+                INSERT INTO updates VALUES (
+                %(posted)s,
+                %(last_updated)s,
+                %(id)s,
+                %(upvotes)s,
+                %(comments)s
+                );
+            """,
+                ({**tmp_comment} for tmp_comment in updates),
+            )
+        self.update_batch = []
 
 
 def main():
@@ -167,7 +163,7 @@ def main():
     c, p = 0, 0
     streamer.t3 = 0
     streamer.t1 = 0
-    overall_start = time.time()
+    overall_start = time()
     inc = 0
 
     while True:
@@ -184,13 +180,24 @@ def main():
             c += 1
             streamer.insert_comment(comment)
 
-        streamer.update_comment()
+        for i in range(min(50, len(streamer.jobs))):
+            id = streamer.jobs.pop()
+            streamer.update_batch.append(id)
+            if self.r.exists(id):
+                self.jobs.appendleft(id)
+
+        if len(streamer.update_batch) >= 100:
+            try:
+                streamer.update_comments()
+            except ServerError:
+                print("Reddit Server Error")
+                sleep(1)
 
         if inc % 100 == 0:
             print(
                 f"comments added: {c}, posts added: {p}, comments updated: {streamer.t1}, posts updated: {streamer.t3}"
             )
-            print(f"APS: {(c + p + streamer.t3 + streamer.t1) / (time.time() - overall_start)}")
+            print(f"APS: {(c + p + streamer.t3 + streamer.t1) / (time() - overall_start)}")
 
 
 if __name__ == "__main__":
