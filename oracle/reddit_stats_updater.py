@@ -41,8 +41,19 @@ class RedditUpdater:
                 DELETE FROM updates
                 WHERE posted < %s;
                 """,
-                [datetime.now() - timedelta(hours=72+48), datetime.now() - timedelta(hours=72+48), datetime.now() - timedelta(hours=72+48)],
+                [datetime.now() - timedelta(hours=72), datetime.now() - timedelta(hours=72), datetime.now() - timedelta(hours=72)],
             )
+
+            import boto3
+
+s3 = boto3.resource(
+    's3',
+    region_name='us-east-1',
+    aws_access_key_id="AKIA37SVVXBH5OJNYPHL",
+    aws_secret_access_key="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"
+)
+content="String content to write to a new S3 file"
+s3.Object('my-bucket-name', 'newfile.txt').put(Body=content)
 
     def update_posts(self, update_dict):
         with self.connection.cursor() as cursor:
