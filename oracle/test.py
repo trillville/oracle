@@ -1,5 +1,5 @@
 def main():
-    text_file = open("test.txt", "w")
+    text_file = open("/home/ec2-user/oracle/oracle/test.txt", "w")
     n = text_file.write("boowoop")
     text_file.close()
 
