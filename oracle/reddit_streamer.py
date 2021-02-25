@@ -20,9 +20,7 @@ logger.addHandler(watchtower.CloudWatchLogHandler())
 
 class RedditStreamer:
     def __init__(self):
-        self.r = redis.StrictRedis.from_url(
-            os.environ.get("RDS_HOST"), charset="utf-8", decode_responses=True
-        )
+        self.r = redis.StrictRedis(host=os.environ.get("RDS_HOST"), charset="utf-8", decode_responses=True)
         self.jobs = deque(self.r.keys() or [])
         self.connection = psycopg2.connect(host=os.environ['RDS_HOST'], user=os.environ['RDS_USER'], password=os.environ['RDS_PW'])
         self.connection.autocommit = True
