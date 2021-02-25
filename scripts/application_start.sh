@@ -1,2 +1,2 @@
 #!/bin/bash
-python3 oracle/test.py
+python3 /home/ec2-user/oracle/oracle/test.py
