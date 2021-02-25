@@ -60,7 +60,7 @@ connection.autocommit = True
 #         );
 #     """)
 #
-def create_staging_table(cursor) -> None:
+def create_staging_table1(cursor) -> None:
     cursor.execute("""
         DROP TABLE IF EXISTS posts;
         CREATE TABLE posts (
@@ -108,7 +108,7 @@ def create_staging_table3(cursor) -> None:
             post_text_replies       INTEGER,
             comment_mentions        INTEGER,
             post_title_mentions     INTEGER,
-            post_text_mentions      INTEGER;
+            post_text_mentions      INTEGER
         );
         CREATE UNIQUE INDEX CONCURRENTLY ticker_date_index ON tickers (date, ticker);
     """)
@@ -136,5 +136,7 @@ def create_staging_table4(cursor) -> None:
 with connection.cursor() as cursor:
     create_staging_table1(cursor)
     create_staging_table2(cursor)
-    create_staging_table3(cursor)
     create_staging_table4(cursor)
+
+with connection.cursor() as cursor:
+    create_staging_table3(cursor)
