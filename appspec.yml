@@ -2,7 +2,7 @@ version: 0.0
 os: linux
 files:
   - source: /
-    destination: /home/ec2-user/oracle/
+    destination: /home/ec2-user/oracle
 hooks:
   AfterInstall:
     - location: scripts/install_dependencies
