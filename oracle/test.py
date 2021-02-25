@@ -1,6 +1,6 @@
 import watchtower, logging
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('arp')
 logger.addHandler(watchtower.CloudWatchLogHandler())
 
 
