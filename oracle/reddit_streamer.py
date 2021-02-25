@@ -12,14 +12,19 @@ import redis
 import time
 from time import time, sleep
 
+import watchtower, logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('wsb-streamer')
+logger.addHandler(watchtower.CloudWatchLogHandler())
+
 
 class RedditStreamer:
     def __init__(self):
         self.r = redis.StrictRedis.from_url(
-            os.environ.get("REDIS_URL"), charset="utf-8", decode_responses=True
+            os.environ.get("RDS_HOST"), charset="utf-8", decode_responses=True
         )
         self.jobs = deque(self.r.keys() or [])
-        self.connection = psycopg2.connect(os.environ["DATABASE_URL"], sslmode="require")
+        self.connection = psycopg2.connect(host=os.environ['RDS_HOST'], user=os.environ['RDS_USER'], password=os.environ['RDS_PW'])
         self.connection.autocommit = True
         self.reddit = praw.Reddit(
             client_id=os.environ["REDDIT_CLIENT_ID"],
@@ -130,7 +135,7 @@ class RedditStreamer:
                 self.t1 += 1
                 num_comments = int(self.r.get(item.name) or 0)
             else:
-                print(f"DEBUG: {item.name}")
+                logger.info(f"DEBUG: {item.name}")
                 num_comments = 0
             updates.append(
                 {
@@ -190,14 +195,14 @@ def main():
             try:
                 streamer.update_comments()
             except ServerError:
-                print("Reddit Server Error")
+                logger.info("Reddit Server Error")
                 sleep(1)
 
         if inc % 100 == 0:
-            print(
+            logger.info(
                 f"comments added: {c}, posts added: {p}, comments updated: {streamer.t1}, posts updated: {streamer.t3}"
             )
-            print(f"APS: {(c + p + streamer.t3 + streamer.t1) / (time() - overall_start)}")
+            logger.info(f"APS: {(c + p + streamer.t3 + streamer.t1) / (time() - overall_start)}")
 
 
 if __name__ == "__main__":
