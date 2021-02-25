@@ -133,6 +133,11 @@ def create_staging_table4(cursor) -> None:
     );
     """)
 
+def arp(cursor) -> None:
+    cursor.execute("""
+    CREATE UNIQUE INDEX CONCURRENTLY ticker_date_index ON tickers (date, ticker);
+    """)
+
 with connection.cursor() as cursor:
     create_staging_table1(cursor)
     create_staging_table2(cursor)
@@ -140,3 +145,6 @@ with connection.cursor() as cursor:
 
 with connection.cursor() as cursor:
     create_staging_table3(cursor)
+
+with connection.cursor() as cursor:
+    arp(cursor)
