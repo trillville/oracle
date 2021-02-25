@@ -5,9 +5,9 @@ files:
     destination: /home/ec2-user/oracle
 hooks:
   AfterInstall:
-    - location: scripts/install_dependencies
+    - location: scripts/install_dependencies.sh
       timeout: 600
       runas: root
   ApplicationStart:
-    - location: scripts/application_start
+    - location: scripts/application_start.sh
       runas: root
