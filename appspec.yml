@@ -10,4 +10,3 @@ hooks:
       runas: root
   ApplicationStart:
     - location: scripts/application_start.sh
-      runas: root
