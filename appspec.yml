@@ -10,3 +10,4 @@ hooks:
       runas: root
   ApplicationStart:
     - location: scripts/application_start.sh
+      runas: ec2-user
