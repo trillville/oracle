@@ -13,16 +13,21 @@ import time
 from time import time, sleep
 
 import watchtower, logging
+
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger('wsb-streamer')
+logger = logging.getLogger("wsb-streamer")
 logger.addHandler(watchtower.CloudWatchLogHandler())
 
 
 class RedditStreamer:
     def __init__(self):
-        self.r = redis.StrictRedis(host=os.environ.get("REDIS_HOST"), charset="utf-8", decode_responses=True)
+        self.r = redis.StrictRedis(
+            host=os.environ.get("REDIS_HOST"), charset="utf-8", decode_responses=True
+        )
         self.jobs = deque(self.r.keys() or [])
-        self.connection = psycopg2.connect(host=os.environ['RDS_HOST'], user=os.environ['RDS_USER'], password=os.environ['RDS_PW'])
+        self.connection = psycopg2.connect(
+            host=os.environ["RDS_HOST"], user=os.environ["RDS_USER"], password=os.environ["RDS_PW"]
+        )
         self.connection.autocommit = True
         self.reddit = praw.Reddit(
             client_id=os.environ["REDDIT_CLIENT_ID"],
@@ -171,17 +176,26 @@ def main():
 
     while True:
         inc += 1
-        for post in streamer.posts_stream:
-            if post is None:
-                break
-            p += 1
-            streamer.insert_post(post)
+        try:
+            for post in streamer.posts_stream:
+                if post is None:
+                    break
+                p += 1
+                streamer.insert_post(post)
 
-        for comment in streamer.comments_stream:
-            if comment is None:
-                break
-            c += 1
-            streamer.insert_comment(comment)
+            for comment in streamer.comments_stream:
+                if comment is None:
+                    break
+                c += 1
+                streamer.insert_comment(comment)
+        except Exception as e:
+            logger.info(f"Reddit API Error: {e}")
+            streamer.posts_stream = streamer.reddit.subreddit("wallstreetbets").stream.submissions(
+                pause_after=-1, skip_existing=True
+            )
+            streamer.comments_stream = streamer.reddit.subreddit("wallstreetbets").stream.comments(
+                pause_after=-1, skip_existing=True
+            )
 
         for i in range(min(50, len(streamer.jobs))):
             id = streamer.jobs.pop()
@@ -192,8 +206,8 @@ def main():
         if len(streamer.update_batch) >= 100:
             try:
                 streamer.update_comments()
-            except ServerError:
-                logger.info("Reddit Server Error")
+            except ServerError as e:
+                logger.info(f"Reddit Server Error: {e}")
                 sleep(1)
 
         if inc % 100 == 0:
