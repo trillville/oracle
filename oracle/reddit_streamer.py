@@ -175,8 +175,8 @@ def main():
     inc = 0
 
     while True:
-        inc += 1
         try:
+            inc += 1
             for post in streamer.posts_stream:
                 if post is None:
                     break
@@ -196,6 +196,7 @@ def main():
             streamer.comments_stream = streamer.reddit.subreddit("wallstreetbets").stream.comments(
                 pause_after=-1, skip_existing=True
             )
+            sleep(10)
 
         for i in range(min(50, len(streamer.jobs))):
             id = streamer.jobs.pop()
@@ -208,7 +209,7 @@ def main():
                 streamer.update_comments()
             except ServerError as e:
                 logger.info(f"Reddit Server Error: {e}")
-                sleep(1)
+                sleep(10)
 
         if inc % 100 == 0:
             logger.info(
